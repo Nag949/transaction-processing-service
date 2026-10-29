@@ -10,7 +10,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Idempotent Background Transaction Processing Service</name>
+    <name>Idempotent Background Transaction Processing Service Assessment</name>
     <description>FDE L2 Assessment - Production-aware background transaction processing service</description>
 
     <properties>

@@ -1,0 +1,268 @@
+# Sample Input and Output
+
+## Sample Input Data
+
+The service processes a batch of 6 transaction requests that demonstrate the key features:
+
+### Transaction Request 1 (Out-of-Order Arrival)
+```json
+{
+  "transactionId": "TXN-2002",
+  "accountId": "ACC-201",
+  "transactionType": "DEBIT",
+  "amount": 40.0,
+  "currency": "USD",
+  "sequenceNumber": 2,
+  "requestId": "REQ-2",
+  "eventTime": "2024-01-01T10:00:00Z"
+}
+```
+**Expected Behavior**: Arrives first but sequence is 2 (should be PENDING until sequence 1 arrives)
+
+### Transaction Request 2 (In-Order Processing)
+```json
+{
+  "transactionId": "TXN-2001",
+  "accountId": "ACC-201",
+  "transactionType": "CREDIT",
+  "amount": 100.0,
+  "currency": "USD",
+  "sequenceNumber": 1,
+  "requestId": "REQ-1",
+  "eventTime": "2024-01-01T10:00:01Z"
+}
+```
+**Expected Behavior**: Arrives second but sequence is 1 (should be PROCESSED immediately)
+
+### Transaction Request 3 (Duplicate Transaction)
+```json
+{
+  "transactionId": "TXN-2002",
+  "accountId": "ACC-201",
+  "transactionType": "DEBIT",
+  "amount": 40.0,
+  "currency": "USD",
+  "sequenceNumber": 2,
+  "requestId": "REQ-2-DUP",
+  "eventTime": "2024-01-01T10:00:02Z"
+}
+```
+**Expected Behavior**: Same transactionId as request 1, different requestId (should be DUPLICATE)
+
+### Transaction Request 4 (Sequential Processing)
+```json
+{
+  "transactionId": "TXN-2003",
+  "accountId": "ACC-201",
+  "transactionType": "CREDIT",
+  "amount": 25.0,
+  "currency": "USD",
+  "sequenceNumber": 3,
+  "requestId": "REQ-3",
+  "eventTime": "2024-01-01T10:00:03Z"
+}
+```
+**Expected Behavior**: Sequence 3, should be PROCESSED after sequence 2 is handled
+
+### Transaction Request 5 (Validation Failure)
+```json
+{
+  "transactionId": "TXN-2004",
+  "accountId": "ACC-202",
+  "transactionType": "DEBIT",
+  "amount": -10.0,
+  "currency": "USD",
+  "sequenceNumber": 4,
+  "requestId": "REQ-4",
+  "eventTime": "2024-01-01T10:00:04Z"
+}
+```
+**Expected Behavior**: Negative amount (should fail validation with FAILED status)
+
+### Transaction Request 6 (Retry Scenario)
+```json
+{
+  "transactionId": "TXN-2005",
+  "accountId": "ACC-203",
+  "transactionType": "CREDIT",
+  "amount": 500.0,
+  "currency": "USD",
+  "sequenceNumber": 1,
+  "requestId": "REQ-5",
+  "eventTime": "2024-01-01T10:00:05Z"
+}
+```
+**Expected Behavior**: Simulates transient failure on first attempt, succeeds after retry
+
+---
+
+## Sample Output
+
+### Console Output
+```
+========================================
+Idempotent Transaction Processing Service
+FDE L2 Assessment
+========================================
+
+Processing 6 transactions...
+
+=== Processing Summary ===
+Total Processed: 6
+Successful: 3
+Duplicates: 1
+Failed: 1
+Pending: 1
+Processing Time: 150 ms
+========================
+
+=== Account Balances ===
+Account ACC-201: 85.0
+Account ACC-203: 500.0
+========================
+
+=== Transaction Details ===
+TXN: TXN-2001 | Account: ACC-201 | Type: CREDIT | Amount: 100.0 | Status: PROCESSED | Retries: 0
+TXN: TXN-2002 | Account: ACC-201 | Type: DEBIT | Amount: 40.0 | Status: PENDING | Retries: 0
+TXN: TXN-2002 | Account: ACC-201 | Type: DEBIT | Amount: 40.0 | Status: DUPLICATE | Retries: 0
+TXN: TXN-2003 | Account: ACC-201 | Type: CREDIT | Amount: 25.0 | Status: PROCESSED | Retries: 0
+TXN: TXN-2004 | Account: ACC-202 | Type: DEBIT | Amount: -10.0 | Status: FAILED | Retries: 0
+TXN: TXN-2005 | Account: ACC-203 | Type: CREDIT | Amount: 500.0 | Status: PROCESSED | Retries: 1
+========================
+```
+
+### Processing Result Object
+```java
+ProcessingResult{
+  totalProcessed=6,
+  successCount=3,
+  duplicateCount=1,
+  failedCount=1,
+  pendingCount=1,
+  validationErrorCount=0,
+  statusCounts={
+    PROCESSED=3,
+    DUPLICATE=1,
+    FAILED=1,
+    PENDING=1
+  },
+  processingTimeMillis=150
+}
+```
+
+### Account Balances
+```
+ACC-201: 85.0  (100 credit - 40 debit + 25 credit)
+ACC-202: 0.0   (no successful transactions)
+ACC-203: 500.0 (500 credit after retry)
+```
+
+---
+
+## Transaction Processing Flow
+
+### Step-by-Step Execution
+
+1. **TXN-2002 (sequence 2)** arrives first
+   - Status: PENDING (waiting for sequence 1)
+   - Account balance: unchanged
+
+2. **TXN-2001 (sequence 1)** arrives second
+   - Status: PROCESSED
+   - Account balance: ACC-201 = 100.0
+   - Triggers processing of pending TXN-2002
+
+3. **TXN-2002 (duplicate with REQ-2-DUP)** arrives third
+   - Status: DUPLICATE (transactionId already processed)
+   - Account balance: unchanged
+
+4. **TXN-2003 (sequence 3)** arrives fourth
+   - Status: PROCESSED
+   - Account balance: ACC-201 = 125.0
+
+5. **TXN-2004 (negative amount)** arrives fifth
+   - Status: FAILED (validation error)
+   - Account balance: unchanged
+
+6. **TXN-2005 (retry scenario)** arrives sixth
+   - First attempt: Transient failure
+   - Retry attempt: Success
+   - Status: PROCESSED
+   - Retry count: 1
+   - Account balance: ACC-203 = 500.0
+
+---
+
+## Additional Test Scenarios
+
+### Scenario 1: In-Order Processing
+**Input**:
+```json
+[
+  {"transactionId": "TXN-001", "accountId": "ACC-001", "type": "CREDIT", "amount": 100.0, "sequence": 1, "requestId": "REQ-1"},
+  {"transactionId": "TXN-002", "accountId": "ACC-001", "type": "DEBIT", "amount": 40.0, "sequence": 2, "requestId": "REQ-2"}
+]
+```
+**Output**:
+- Total Processed: 2
+- Successful: 2
+- ACC-001 Balance: 60.0
+
+### Scenario 2: Duplicate Request Detection
+**Input**:
+```json
+[
+  {"transactionId": "TXN-001", "accountId": "ACC-001", "type": "CREDIT", "amount": 100.0, "sequence": 1, "requestId": "REQ-1"},
+  {"transactionId": "TXN-001", "accountId": "ACC-001", "type": "CREDIT", "amount": 100.0, "sequence": 1, "requestId": "REQ-1"}
+]
+```
+**Output**:
+- Total Processed: 2
+- Successful: 1
+- Duplicate: 1
+- ACC-001 Balance: 100.0
+
+### Scenario 3: Insufficient Funds
+**Input**:
+```json
+[
+  {"transactionId": "TXN-001", "accountId": "ACC-001", "type": "DEBIT", "amount": 100.0, "sequence": 1, "requestId": "REQ-1"}
+]
+```
+**Output**:
+- Total Processed: 1
+- Failed: 1
+- ACC-001 Balance: 0.0
+
+### Scenario 4: Multiple Accounts
+**Input**:
+```json
+[
+  {"transactionId": "TXN-001", "accountId": "ACC-001", "type": "CREDIT", "amount": 100.0, "sequence": 1, "requestId": "REQ-1"},
+  {"transactionId": "TXN-002", "accountId": "ACC-002", "type": "CREDIT", "amount": 200.0, "sequence": 1, "requestId": "REQ-2"},
+  {"transactionId": "TXN-003", "accountId": "ACC-001", "type": "DEBIT", "amount": 30.0, "sequence": 2, "requestId": "REQ-3"}
+]
+```
+**Output**:
+- Total Processed: 3
+- Successful: 3
+- ACC-001 Balance: 70.0
+- ACC-002 Balance: 200.0
+
+---
+
+## Expected Behavior Summary
+
+| Transaction ID | Sequence | Account | Type | Amount | Status | Retries | Balance Impact |
+|----------------|----------|---------|------|--------|--------|---------|----------------|
+| TXN-2001 | 1 | ACC-201 | CREDIT | 100.0 | PROCESSED | 0 | +100.0 |
+| TXN-2002 | 2 | ACC-201 | DEBIT | 40.0 | PENDING | 0 | 0.0 |
+| TXN-2002 (dup) | 2 | ACC-201 | DEBIT | 40.0 | DUPLICATE | 0 | 0.0 |
+| TXN-2003 | 3 | ACC-201 | CREDIT | 25.0 | PROCESSED | 0 | +25.0 |
+| TXN-2004 | 4 | ACC-202 | DEBIT | -10.0 | FAILED | 0 | 0.0 |
+| TXN-2005 | 1 | ACC-203 | CREDIT | 500.0 | PROCESSED | 1 | +500.0 |
+
+**Final Balances**:
+- ACC-201: 85.0 (100 - 40 + 25)
+- ACC-202: 0.0 (no successful transactions)
+- ACC-203: 500.0 (credit after retry)

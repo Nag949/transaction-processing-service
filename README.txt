@@ -358,14 +358,14 @@ For questions about this assessment submission, please refer to the recruitment 
 
 This submission demonstrates:
 
-✅ **Strong core engineering**: Clean architecture, separation of concerns
-✅ **Idempotency**: Dual-level deduplication with clear design
-✅ **Out-of-order handling**: Sequence-based strategy with trade-off analysis
-✅ **Resilience**: Retry logic with transient/permanent failure distinction
-✅ **Observability**: Structured logging and processing summaries
-✅ **Production awareness**: Clear documentation of hardening needs
-✅ **Test coverage**: Comprehensive unit tests for key scenarios
-✅ **AI-assisted development**: Effective use of AI with validation
-✅ **Design communication**: Clear explanation of choices and trade-offs
+ **Strong core engineering**: Clean architecture, separation of concerns
+ **Idempotency**: Dual-level deduplication with clear design
+ **Out-of-order handling**: Sequence-based strategy with trade-off analysis
+ **Resilience**: Retry logic with transient/permanent failure distinction
+ **Observability**: Structured logging and processing summaries
+ **Production awareness**: Clear documentation of hardening needs
+ **Test coverage**: Comprehensive unit tests for key scenarios
+ **AI-assisted development**: Effective use of AI with validation
+ **Design communication**: Clear explanation of choices and trade-offs
 
 The service successfully processes all assessment test scenarios and demonstrates FDE L2 readiness signals.

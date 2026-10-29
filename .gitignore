@@ -1,0 +1,9 @@
+/target/classes/com/transaction/strategy/*.class
+/target/classes/com/transaction
+/target/classes/META-INF/maven/com.transaction/transaction-processing-service
+/target/classes/META-INF
+/target/test-classes/com/transaction/*.class
+/target/classes
+/*.classpath
+/.settings
+/*.project

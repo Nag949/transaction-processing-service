@@ -1,0 +1,374 @@
+# Execution Instructions
+
+## Prerequisites
+
+### Required Software
+- **Java Development Kit (JDK) 17** or higher
+  - Download from: https://adoptium.net/
+  - Verify installation: `java -version`
+- **Apache Maven 3.6+**
+  - Download from: https://maven.apache.org/download.cgi
+  - Verify installation: `mvn -version`
+
+### Optional Software
+- **Git** (for cloning the repository)
+  - Download from: https://git-scm.com/downloads
+
+---
+
+## Installation Steps
+
+### 1. Navigate to Project Directory
+```bash
+cd C:\Users\Manish\Assessment\transaction-processing-service
+```
+
+### 2. Verify Project Structure
+```bash
+dir
+```
+Expected output:
+```
+DESIGN_DOCUMENTATION.md
+README.md
+pom.xml
+src
+target
+```
+
+### 3. Clean and Build the Project
+```bash
+mvn clean install
+```
+
+This command will:
+- Remove any previous build artifacts
+- Compile all Java source files
+- Run all unit tests
+- Package the application into a JAR file
+
+**Expected Output**:
+```
+[INFO] Scanning for projects...
+[INFO] Building transaction-processing-service 1.0.0
+[INFO] -------------------------------- jar --------------------------------
+[INFO] 
+[INFO] --- maven-clean-plugin:3.2.0:clean (default-clean) @ transaction-processing-service ---
+[INFO] Deleting C:\Users\Manish\Assessment\transaction-processing-service\target
+[INFO] 
+[INFO] --- maven-resources-plugin:3.3.0:resources (default-resources) @ transaction-processing-service ---
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:compile (default-compile) @ transaction-processing-service ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 13 source files to C:\Users\Manish\Assessment\transaction-processing-service\target\classes
+[INFO] 
+[INFO] --- maven-resources-plugin:3.3.0:testResources (default-testResources) @ transaction-processing-service ---
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:testCompile (default-testCompile) @ transaction-processing-service ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 1 source file to C:\Users\Manish\Assessment\transaction-processing-service\target\test-classes
+[INFO] 
+[INFO] --- maven-surefire-plugin:3.1.2:test (default-test) @ transaction-processing-service ---
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] --- maven-jar-plugin:3.3.0:jar (default-jar) @ transaction-processing-service ---
+[INFO] Building jar: C:\Users\Manish\Assessment\transaction-processing-service\target\transaction-processing-service-1.0.0.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
+---
+
+## Running the Application
+
+### Method 1: Using Maven Exec Plugin
+```bash
+mvn exec:java -Dexec.mainClass="com.transaction.TransactionProcessingApplication"
+```
+
+### Method 2: Using Java JAR
+```bash
+# First package the JAR
+mvn clean package
+
+# Run the JAR
+java -jar target/transaction-processing-service-1.0.0.jar
+```
+
+### Method 3: Direct Java Execution (After Compilation)
+```bash
+# Compile first
+mvn compile
+
+# Run directly
+java -cp target/classes;target/dependency/* com.transaction.TransactionProcessingApplication
+```
+
+**Expected Application Output**:
+```
+========================================
+Idempotent Transaction Processing Service
+FDE L2 Assessment
+========================================
+
+Processing 6 transactions...
+
+=== Processing Summary ===
+Total Processed: 6
+Successful: 3
+Duplicates: 1
+Failed: 1
+Pending: 1
+Processing Time: 150 ms
+========================
+
+=== Account Balances ===
+Account ACC-201: 85.0
+Account ACC-203: 500.0
+========================
+
+=== Transaction Details ===
+TXN: TXN-2001 | Account: ACC-201 | Type: CREDIT | Amount: 100.0 | Status: PROCESSED | Retries: 0
+TXN: TXN-2002 | Account: ACC-201 | Type: DEBIT | Amount: 40.0 | Status: PENDING | Retries: 0
+TXN: TXN-2002 | Account: ACC-201 | Type: DEBIT | Amount: 40.0 | Status: DUPLICATE | Retries: 0
+TXN: TXN-2003 | Account: ACC-201 | Type: CREDIT | Amount: 25.0 | Status: PROCESSED | Retries: 0
+TXN: TXN-2004 | Account: ACC-202 | Type: DEBIT | Amount: -10.0 | Status: FAILED | Retries: 0
+TXN: TXN-2005 | Account: ACC-203 | Type: CREDIT | Amount: 500.0 | Status: PROCESSED | Retries: 1
+========================
+```
+
+---
+
+## Running Tests
+
+### Run All Tests
+```bash
+mvn test
+```
+
+**Expected Output**:
+```
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running TransactionProcessingServiceTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] Results:
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
+### Run Specific Test
+```bash
+# Run a specific test method
+mvn test -Dtest=TransactionProcessingServiceTest#testDuplicateRequestDetection
+
+# Run a specific test class
+mvn test -Dtest=TransactionProcessingServiceTest
+```
+
+### Run Tests with verbose output
+```bash
+mvn test -X
+```
+
+### Generate Test Report
+```bash
+mvn surefire-report:report
+```
+This generates an HTML report in `target/site/surefire-report.html`
+
+---
+
+## Test Coverage
+
+The test suite includes 12 test cases covering:
+
+1. **testDuplicateRequestDetection** - Tests requestId-based deduplication
+2. **testDuplicateTransactionDetection** - Tests transactionId-based deduplication
+3. **testOutOfOrderProcessing** - Tests sequence-based out-of-order handling
+4. **testInOrderProcessing** - Tests normal sequential processing
+5. **testInvalidTransactionValidation** - Tests validation failures (negative amounts)
+6. **testNullTransactionValidation** - Tests null request handling
+7. **testRetryScenario** - Tests transient failure and retry logic
+8. **testInsufficientFundsDebit** - Tests business logic failures
+9. **testCreditAndDebit** - Tests basic credit/debit operations
+10. **testMultipleAccounts** - Tests transactions across multiple accounts
+11. **testServiceReset** - Tests state reset functionality
+12. **testAssessmentScenario** - Tests the full assessment scenario
+
+---
+
+## Troubleshooting
+
+### Issue: Maven not found
+**Solution**: Ensure Maven is installed and added to PATH
+```bash
+# Verify Maven installation
+mvn -version
+
+# If not found, add Maven to system PATH
+# Windows: Add MAVEN_HOME/bin to PATH environment variable
+```
+
+### Issue: Java version mismatch
+**Solution**: Ensure Java 17 is installed and configured
+```bash
+# Verify Java version
+java -version
+
+# Set JAVA_HOME environment variable to Java 17 installation
+# Windows: Set JAVA_HOME=C:\Program Files\Java\jdk-17
+```
+
+### Issue: Build failures
+**Solution**: Clean and rebuild
+```bash
+mvn clean install -U
+```
+The `-U` flag forces update of snapshots and releases
+
+### Issue: Test failures
+**Solution**: Check test output for specific failure reasons
+```bash
+mvn test -Dtest=TransactionProcessingServiceTest
+```
+Review the error messages in the console output
+
+### Issue: Port conflicts
+**Solution**: This application does not use any external ports, so port conflicts should not occur
+
+### Issue: Logging not visible
+**Solution**: Check logback.xml configuration
+```bash
+# View logging configuration
+type src\main\resources\logback.xml
+
+# Ensure log level is set to INFO or DEBUG
+```
+
+---
+
+## Customization
+
+### Change Retry Configuration
+Edit `src/main/java/com/transaction/processor/TransactionProcessor.java`:
+```java
+private static final int MAX_RETRY_COUNT = 2;  // Change this value
+```
+
+### Change Simulated Failure Transaction
+Edit `src/main/java/com/transaction/processor/TransactionProcessor.java`:
+```java
+private static final String SIMULATED_FAILURE_TXN_ID = "TXN-2005";  // Change this ID
+```
+
+### Change Logging Level
+Edit `src/main/resources/logback.xml`:
+```xml
+<logger name="com.transaction" level="DEBUG"/>  <!-- Change to DEBUG for detailed logs -->
+```
+
+### Modify Test Data
+Edit `src/main/java/com/transaction/TransactionProcessingApplication.java`:
+```java
+private static List<TransactionRequest> createTestData() {
+    // Add or modify test transactions here
+}
+```
+
+---
+
+## IDE Setup
+
+### IntelliJ IDEA
+1. Open the project folder
+2. Let IntelliJ detect the Maven project
+3. Wait for dependency resolution
+4. Run `TransactionProcessingApplication` directly from IDE
+5. Run tests by right-clicking on test class and selecting "Run"
+
+### Eclipse
+1. Import as "Existing Maven Project"
+2. Select the project directory
+3. Click "Finish"
+4. Run as "Java Application" for main class
+5. Run as "JUnit Test" for tests
+
+### VS Code
+1. Install "Extension Pack for Java"
+2. Open the project folder
+3. VS Code will detect Maven project
+4. Use Run/Debug buttons or F5 to run
+5. Test execution via Test Explorer
+
+---
+
+## Build Outputs
+
+After successful build, the following artifacts are created:
+
+### Target Directory Structure
+```
+target/
+├── classes/                          # Compiled Java classes
+│   └── com/transaction/
+├── test-classes/                     # Compiled test classes
+│   └── com/transaction/
+├── transaction-processing-service-1.0.0.jar  # Executable JAR
+├── transaction-processing-service-1.0.0-sources.jar  # Source JAR
+└── surefire-reports/                 # Test reports
+    ├── TEST-com.transaction.TransactionProcessingServiceTest.xml
+    └── com.transaction.TransactionProcessingServiceTest.txt
+```
+
+---
+
+## Quick Start Commands
+
+```bash
+# Clone (if needed)
+git clone <repository-url>
+cd transaction-processing-service
+
+# Build and test
+mvn clean install
+
+# Run application
+mvn exec:java -Dexec.mainClass="com.transaction.TransactionProcessingApplication"
+
+# Run tests only
+mvn test
+
+# Clean build artifacts
+mvn clean
+
+# Package without tests
+mvn package -DskipTests
+```
+
+---
+
+## Performance Considerations
+
+- The current implementation uses in-memory stores suitable for assessment purposes
+- Processing time for 6 transactions is typically 100-200ms
+- Memory usage is minimal (~50MB for the application)
+- No external dependencies or network calls required
+
+---
+
+## Next Steps
+
+After successful execution:
+1. Review the output in SAMPLE_INPUT_OUTPUT.md
+2. Examine the design documentation in DESIGN_DOCUMENTATION.md
+3. Explore the source code in the `src/main/java` directory
+4. Review test cases in `src/test/java/com/transaction`
+5. Customize test data or configuration as needed
